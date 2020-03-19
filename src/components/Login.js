@@ -2,6 +2,13 @@ import React, { Component } from 'react';
 import axios from 'axios';
 import { API_SERVER } from '../env';
 export default class Login extends Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            username: "",
+            email: "",
+        }
+    }
     render() {
         const URL = `${API_SERVER}/rest-auth/login/`
         const login = () => {
@@ -14,6 +21,7 @@ export default class Login extends Component {
                 .then((res) => {
                     console.log(res)
                     localStorage.setItem('token', res.data.key)
+                    authentication()
                 })
                 .catch(() => { console.log('login failed') })
         }
@@ -27,14 +35,25 @@ export default class Login extends Component {
                         AUthorization: `Token ${TOKEN}`,
                     }
                 })
-                .then((res) => { console.log(res) })
+                .then((res) => {
+                    console.log(res)
+                    this.setState({
+
+                        username: res.data.username,
+                        email: res.data.email,
+                    })
+                })
                 .catch(() => { console.log('token authentication failed') })
         }
         return (
             <div>
                 <input></input>
                 <button onClick={login}>send</button>
-                <button onClick={authentication}>auth</button>
+                <button onClick={authentication}>token auth</button>
+                <br />
+                {this.state.username}
+                <br />
+                {this.state.email}
             </div>
         )
     }
