@@ -7,16 +7,30 @@ export default class Login extends Component {
         this.state = {
             username: "",
             email: "",
+            password: "",
+            auth:
+            {
+                username: "",
+                email: "",
+            }
         }
     }
+    handleOnChange(e) {
+        console.log(this.state)
+        this.setState({
+            ...this.state,
+            [e.target.name]: e.target.value
+        })
+    }
     render() {
-        const URL = `${API_SERVER}/rest-auth/login/`
         const login = () => {
+            const URL = `${API_SERVER}/rest-auth/login/`
+            const { username, email, password } = this.state
             axios
                 .post(URL, {
-                    username: 'nabemi',
-                    password: 'nabeminabemi',
-                    email: 'nabemi@gmail.com'
+                    username: username,
+                    email: email,
+                    password: password,
                 })
                 .then((res) => {
                     console.log(res)
@@ -28,32 +42,38 @@ export default class Login extends Component {
 
         const authentication = () => {
             const URL = `${API_SERVER}/rest-auth/user/`
-            const TOKEN = 'da7fa020eca55cb80bdcbbca9575436da5f8cdbe'
+            let token = localStorage.getItem('token')
             axios
                 .get(URL, {
                     headers: {
-                        AUthorization: `Token ${TOKEN}`,
+                        AUthorization: `Token ${token}`,
                     }
                 })
                 .then((res) => {
                     console.log(res)
                     this.setState({
-
-                        username: res.data.username,
-                        email: res.data.email,
+                        ...this.state,
+                        auth: {
+                            username: res.data.username,
+                            email: res.data.email,
+                        }
                     })
                 })
                 .catch(() => { console.log('token authentication failed') })
         }
         return (
             <div>
-                <input></input>
+                username:<input type='text' name='username' onChange={this.handleOnChange.bind(this)} value={this.state.username}></input>
+                <br />
+                email:<input type='email' name='email' onChange={this.handleOnChange.bind(this)} value={this.state.email}></input>
+                <br />
+                password<input type='password' name='password' onChange={this.handleOnChange.bind(this)} value={this.state.password}></input>
+                <br />
                 <button onClick={login}>send</button>
-                <button onClick={authentication}>token auth</button>
                 <br />
-                {this.state.username}
+                auth>username:{this.state.auth.username}
                 <br />
-                {this.state.email}
+                auth>email:{this.state.auth.email}
             </div>
         )
     }
