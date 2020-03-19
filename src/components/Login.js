@@ -11,7 +11,9 @@ export default class Login extends Component {
                     password: 'nabeminabemi',
                     email: 'nabemi@gmail.com'
                 })
-                .then((res) => { console.log(res) })
+                .then((res) => {
+                    console.log(res)
+                })
                 .catch(() => { console.log('login failed') })
         }
         return (
