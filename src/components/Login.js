@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import axios from 'axios';
-import { API_SERVER } from '../env';
+import { API_SERVER, GOOGLE_CLIENT_ID } from '../env';
 export default class Login extends Component {
     constructor(props) {
         super(props)
@@ -15,12 +15,80 @@ export default class Login extends Component {
             }
         }
     }
+
+    componentDidMount() {
+        this.downloadGoogleScript(this.initSignInButton)
+    }
+
+    downloadGoogleScript = (callback) => {
+        const element = document.getElementsByTagName('script')[0];
+        const js = document.createElement('script');
+        js.id = 'google-platform';
+        js.src = '//apis.google.com/js/platform.js';
+        js.async = true;
+        js.defer = true;
+        element.parentNode.insertBefore(js, element);
+        js.onload = () => callback(window.gapi);
+    }
+
+    initSignInButton = (gapi) => {
+        gapi.load('auth2', () => {
+            gapi.auth2.init({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'email',
+            })
+                .then((res) => {
+                    console.log('res', res);
+                    console.log('accesstoken', res.access_token);
+                    console.log('idtoken', res.id_token);
+                    gapi.signin2.render('google-signin-button', {
+                        'onsuccess': this.onSignIn,
+                        'onfailure': (err) => console.error(err)
+                    })
+                })
+        })
+    }
+    onSignIn = (googleUser) => {
+        const GOOGLE_LOGIN_URL = `${API_SERVER}/rest_auth/google/`
+        axios
+            .post(GOOGLE_LOGIN_URL, {
+                access_token: googleUser.getAuthResponse().access_token
+            })
+            .then((res) => {
+                localStorage.setItem('token', res.data.key)
+                this.authentication()
+                console.log(res)
+            })
+            .catch(() => { console.log('google login error') })
+    }
     handleOnChange(e) {
         console.log(this.state)
         this.setState({
             ...this.state,
             [e.target.name]: e.target.value
         })
+    }
+
+    authentication() {
+        const URL = `${API_SERVER}/rest-auth/user/`
+        let token = localStorage.getItem('token')
+        axios
+            .get(URL, {
+                headers: {
+                    AUthorization: `Token ${token}`,
+                }
+            })
+            .then((res) => {
+                console.log(res)
+                this.setState({
+                    ...this.state,
+                    auth: {
+                        username: res.data.username,
+                        email: res.data.email,
+                    }
+                })
+            })
+            .catch(() => { console.log('token authentication failed') })
     }
     render() {
         const login = () => {
@@ -35,31 +103,9 @@ export default class Login extends Component {
                 .then((res) => {
                     console.log(res)
                     localStorage.setItem('token', res.data.key)
-                    authentication()
+                    this.authentication()
                 })
                 .catch(() => { console.log('login failed') })
-        }
-
-        const authentication = () => {
-            const URL = `${API_SERVER}/rest-auth/user/`
-            let token = localStorage.getItem('token')
-            axios
-                .get(URL, {
-                    headers: {
-                        AUthorization: `Token ${token}`,
-                    }
-                })
-                .then((res) => {
-                    console.log(res)
-                    this.setState({
-                        ...this.state,
-                        auth: {
-                            username: res.data.username,
-                            email: res.data.email,
-                        }
-                    })
-                })
-                .catch(() => { console.log('token authentication failed') })
         }
         return (
             <div>
@@ -74,6 +120,9 @@ export default class Login extends Component {
                 auth>username:{this.state.auth.username}
                 <br />
                 auth>email:{this.state.auth.email}
+                <br />
+                <div id='google-signin-button'></div>
+
             </div>
         )
     }
